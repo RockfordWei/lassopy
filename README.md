@@ -2,7 +2,7 @@
 
 This is an experimental project for integrating Python 3.6 into Lasso 9
 
-## Testing
+## Quick Test
 
 ```
 $ git clone https://github.com/RockfordWei/lassopy.git && cd lassopy

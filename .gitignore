@@ -2,3 +2,4 @@ Dockerfile
 .DS_Store
 *.o
 *.so
+.vscode/
