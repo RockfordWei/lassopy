@@ -81,7 +81,8 @@ osError python_import( lasso_request_t token, tag_action_t action )
 {
     lasso_type_t self = NULL;
     osError err = lasso_getTagSelf(token, &self);
-	if(!self || err != osErrNoErr) return osErrInvalidParameter;
+    if(err != osErrNoErr) return err;
+	if(!self) return osErrInvalidParameter;
     lasso_type_t param_lib_path = NULL;
     err = lasso_getTagParam2(token, 0, &param_lib_path);
 	if (err != osErrNoErr) return err;
@@ -98,7 +99,38 @@ osError python_import( lasso_request_t token, tag_action_t action )
 }
 
 osError python_load( lasso_request_t token, tag_action_t action )
-{ return osErrNoErr; }
+{ 
+    lasso_type_t self = NULL;
+    osError err = lasso_getTagSelf(token, &self);
+    if(err != osErrNoErr) return err;
+	if(!self) return osErrInvalidParameter;
+    lasso_type_t object = NULL;
+    err = lasso_getTagParam2(token, 0, &object);
+	if (err != osErrNoErr) return err;
+
+    auto_lasso_value_t pyobj;
+    err = lasso_typeGetString(token, object, &pyobj);
+	if (err != osErrNoErr) return err;
+
+    if (!pyobj.name) return osErrInvalidParameter;
+
+    void * mod = NULL;
+    err = lasso_getPtrMember(token, self, kPyObjReference, &mod);
+	if (err != osErrNoErr) return err;
+
+    if (!mod) return osErrInvalidMemoryObject;
+    PyObject * obj = PyObject_GetAttrString((PyObject *)mod, pyobj.name);
+
+    if (!obj) return osErrResNotFound;
+
+    string tp_name = string (obj->ob_type->tp_name);
+    cout << "object " << pyobj.name << " type is " << tp_name << endl;
+/*    switch(tp_name) {
+
+    }
+    */
+    return osErrNoErr; 
+}
 osError python_save( lasso_request_t token, tag_action_t action )
 { return osErrNoErr; }
 osError python_call( lasso_request_t token, tag_action_t action )

@@ -1,12 +1,8 @@
 <?LassoScript
-protect => {
-    handle => {^
-        //error_msg()
-    ^}
+protect => {^
     lcapi_loadmodule('/home/lassopy.so')
     local(py = python('datetime'))
-    if(true) => {^
-        #py
-    ^}
-}
+    local(minyear = #py->load('MINYEAR'))
+    #minyear
+^}
 ?>
