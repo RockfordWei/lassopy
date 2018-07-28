@@ -127,6 +127,9 @@ osError python_load( lasso_request_t token, tag_action_t action )
     if (tp_name == "int") {
         long long value = PyLong_AsLongLong(obj);
         return lasso_returnTagValueInteger(token, value);
+    } else if (tp_name == "float") {
+        double value = PyFloat_AsDouble(obj);
+        return lasso_returnTagValueDecimal(token, value);
     }
     return osErrNoErr; 
 }
