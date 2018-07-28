@@ -124,11 +124,10 @@ osError python_load( lasso_request_t token, tag_action_t action )
     if (!obj) return osErrResNotFound;
 
     string tp_name = string (obj->ob_type->tp_name);
-    cout << "object " << pyobj.name << " type is " << tp_name << endl;
-/*    switch(tp_name) {
-
+    if (tp_name == "int") {
+        long long value = PyLong_AsLongLong(obj);
+        return lasso_returnTagValueInteger(token, value);
     }
-    */
     return osErrNoErr; 
 }
 osError python_save( lasso_request_t token, tag_action_t action )
