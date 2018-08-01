@@ -9,6 +9,7 @@ enum PythonMethods {
     py_import = 0,
     py_load,
     py_save,
+    py_value,
     py_call,
     py_run
 };
@@ -18,6 +19,7 @@ static const char * kPyCreate = "onCreate";
 static const char * kPyImport = "import";
 static const char * kPyLoad = "load";
 static const char * kPySave = "save";
+static const char * kPyValue = "value";
 static const char * kPyCall = "call";
 static const char * kPyRun = "run";
 // Private data member
@@ -54,6 +56,9 @@ osError python_typeinit(lasso_request_t token, tag_action_t action)
 
     lasso_typeAllocTag(token, &tag, python_save);
     lasso_typeAddMember(token, self, kPySave, tag);
+
+    lasso_typeAllocTag(token, &tag, python_value);
+    lasso_typeAddMember(token, self, kPyValue, tag);
 
     lasso_typeAllocTag(token, &tag, python_call);
     lasso_typeAddMember(token, self, kPyCall, tag);
@@ -116,10 +121,32 @@ osError python_load( lasso_request_t token, tag_action_t action )
 
     void * mod = NULL;
     err = lasso_getPtrMember(token, self, kPyObjReference, &mod);
-	if (err != osErrNoErr || !mod) return err;
+	if (err != osErrNoErr) return err;
 
     PyObject * pmod = reinterpret_cast<PyObject *>(mod);
+    if (!pmod) return osErrResource;
+
     PyObject * obj = PyObject_GetAttrString(pmod, pyobj.name);
+    if (!obj) return osErrResNotFound;
+
+    lasso_type_t child;
+    err = lasso_typeAlloc(token, kPython, 0, NULL, &child);
+    if (err != osErrNoErr) return err;
+    err = lasso_setPtrMember(token, child, kPyObjReference, obj, &python_release);
+    if (err != osErrNoErr) return err;
+    return lasso_returnTagValue(token, child);
+}
+
+osError python_value( lasso_request_t token, tag_action_t action )
+{
+    lasso_type_t self = NULL;
+    osError err = lasso_getTagSelf(token, &self);
+
+    void * pobj = NULL;
+    err = lasso_getPtrMember(token, self, kPyObjReference, &pobj);
+	if (err != osErrNoErr) return err;
+
+    PyObject * obj = reinterpret_cast<PyObject *>(pobj);
     if (!obj) return osErrResNotFound;
 
     string tp_name = string (obj->ob_type->tp_name);
@@ -138,20 +165,10 @@ osError python_load( lasso_request_t token, tag_action_t action )
             return lasso_returnTagValueString(token, "", 0);
         }
     } else {
-        lasso_type_t child;
-        err = lasso_typeAlloc(token, kPython, 0, NULL, &child);
-        if (err != osErrNoErr) {
-            cerr << "cannot initialize a child instance: " << getErrMsg(err) << endl;
-            return err;
-        }
-        err = lasso_setPtrMember(token, child, kPyObjReference, obj, &python_release);
-        if (err != osErrNoErr) {
-            cerr << "cannot set pointer for the new instance " << getErrMsg(err) << endl;
-            return err;
-        }
-        return lasso_returnTagValue(token, child);
+        return osErrNotImplemented;
     }
 }
+
 
 osError python_save( lasso_request_t token, tag_action_t action )
 { return osErrNoErr; }

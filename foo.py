@@ -19,3 +19,5 @@ intVar = 1048576
 stringVar = 'Hello, world'
 listVar = ['rocky', 505, 2.23, 'wei', 70.2]
 dictVar = {'Name': 'Rocky', 'Age': 17, 'Class': 'Top'}
+
+rocky = Person('rocky', 21)
