@@ -138,7 +138,18 @@ osError python_load( lasso_request_t token, tag_action_t action )
             return lasso_returnTagValueString(token, "", 0);
         }
     } else {
-        return osErrNotImplemented;
+        lasso_type_t child;
+        err = lasso_typeAlloc(token, kPython, 0, NULL, &child);
+        if (err != osErrNoErr) {
+            cerr << "cannot initialize a child instance: " << getErrMsg(err) << endl;
+            return err;
+        }
+        err = lasso_setPtrMember(token, child, kPyObjReference, obj, &python_release);
+        if (err != osErrNoErr) {
+            cerr << "cannot set pointer for the new instance " << getErrMsg(err) << endl;
+            return err;
+        }
+        return lasso_returnTagValue(token, child);
     }
 }
 

@@ -20,6 +20,19 @@ if (true) => {^
     #y
 ^}
 
+
+local(n = #py->load('listVar'))
+if (true) => {^
+    '\nexpecting list: '
+    #n
+^}
+
+local(m = #py->load('intVar'))
+if (true) => {^
+    '\nexpecting integer: '
+    #m
+^}
+
 #py->run("from datetime import datetime; print('\\n\\n\\nthis is not what you want', datetime.now(), '\\n\\n\\n')");
 if (true) => {^
     '\n\nThe end.'
