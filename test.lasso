@@ -1,11 +1,27 @@
 <?LassoScript
-protect => {^
-    lcapi_loadmodule('/home/lassopy.so')
-    local(py = python('datetime'), 
-        minyear = #py->load('MINYEAR'),
-        maxyear = #py->load('MAXYEAR'))
+lcapi_loadmodule('/home/lassopy.so')
+local(py = python('datetime')) 
+local(minyear = #py->load('MINYEAR'))
+local(maxyear = #py->load('MAXYEAR'))
+if (true) => {^
+    '\n\n\n BEGIN LASSO TESTING \n\n\n'
+    '\nexpecting minimal year: '
     #minyear
-    '\n'
+    '\nexpecting maximal year: '
     #maxyear
+^}
+#py = python('foo')
+local(x = #py->load('intVar'))
+local(y = #py->load('stringVar'))
+if (true) => {^
+    '\nexpecting integer: '
+    #x
+    '\nexpecting string: '
+    #y
+^}
+
+#py->run("from datetime import datetime; print('\\n\\n\\nthis is not what you want', datetime.now(), '\\n\\n\\n')");
+if (true) => {^
+    '\n\nThe end.'
 ^}
 ?>

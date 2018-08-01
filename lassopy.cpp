@@ -1,6 +1,8 @@
 #include "lassopy.h"
 #include <Python.h>
 #include <iostream>
+#include <stack>
+
 using namespace std;
 
 enum PythonMethods {
@@ -32,7 +34,7 @@ void registerLassoModule( void )
 
 osError python_typeinit(lasso_request_t token, tag_action_t action)
 {
-	lasso_type_t self = NULL;
+    lasso_type_t self = NULL;
 	osError err = lasso_typeAllocCustom(token, &self, kPython);
     if ( err != osErrNoErr ) return err;
     // add private data member
@@ -92,10 +94,8 @@ osError python_import( lasso_request_t token, tag_action_t action )
 	if (err != osErrNoErr) return err;
 
     PyObject * mod = PyImport_ImportModule(lib_path.name);
-    if (!mod) return osErrResNotFound;
-    err = lasso_setPtrMember(token, self, kPyObjReference, mod, &python_release);
-    //cerr << "set member " << err << " => " << getErrMsg(err) << endl;
-    return err;
+    if (!mod) return osErrFileInvalid;
+    return lasso_setPtrMember(token, self, kPyObjReference, mod, &python_release);
 }
 
 osError python_load( lasso_request_t token, tag_action_t action )
@@ -116,11 +116,10 @@ osError python_load( lasso_request_t token, tag_action_t action )
 
     void * mod = NULL;
     err = lasso_getPtrMember(token, self, kPyObjReference, &mod);
-	if (err != osErrNoErr) return err;
+	if (err != osErrNoErr || !mod) return err;
 
-    if (!mod) return osErrInvalidMemoryObject;
-    PyObject * obj = PyObject_GetAttrString((PyObject *)mod, pyobj.name);
-
+    PyObject * pmod = reinterpret_cast<PyObject *>(mod);
+    PyObject * obj = PyObject_GetAttrString(pmod, pyobj.name);
     if (!obj) return osErrResNotFound;
 
     string tp_name = string (obj->ob_type->tp_name);
@@ -130,15 +129,41 @@ osError python_load( lasso_request_t token, tag_action_t action )
     } else if (tp_name == "float") {
         double value = PyFloat_AsDouble(obj);
         return lasso_returnTagValueDecimal(token, value);
+    } else if (tp_name == "str") {
+        Py_ssize_t sz = 0;
+        char * str = PyUnicode_AsUTF8AndSize(obj, &sz);
+        if (str && sz > 0) {
+            return lasso_returnTagValueString(token, str, sz);
+        } else {
+            return lasso_returnTagValueString(token, "", 0);
+        }
+    } else {
+        return osErrNotImplemented;
     }
-    return osErrNoErr; 
 }
+
 osError python_save( lasso_request_t token, tag_action_t action )
 { return osErrNoErr; }
 osError python_call( lasso_request_t token, tag_action_t action )
 { return osErrNoErr; }
+
 osError python_run( lasso_request_t token, tag_action_t action )
-{ return osErrNoErr; }
+{ 
+    lasso_type_t self = NULL;
+    osError err = lasso_getTagSelf(token, &self);
+    if(err != osErrNoErr) return err;
+	if(!self) return osErrInvalidParameter;
+    lasso_type_t command_type = NULL;
+    err = lasso_getTagParam2(token, 0, &command_type);
+	if (err != osErrNoErr) return err;
+
+    auto_lasso_value_t command_value;
+    err = lasso_typeGetString(token, command_type, &command_value);
+	if (err != osErrNoErr) return err;
+
+    PyRun_SimpleString(command_value.name);
+    return err;
+}
 
 string getErrMsg(osError err) 
 {
