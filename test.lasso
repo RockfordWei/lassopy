@@ -33,6 +33,12 @@ if (true) => {^
     #m->value()
 ^}
 
+local(complex = #py->load('complexVar'))
+if (true) => {^
+    '\nexpecting complex: '
+    #complex->value()
+^}
+
 local(arr = #py->load('listVar'))
 if (true) => {^
     '\nexpecting array: '

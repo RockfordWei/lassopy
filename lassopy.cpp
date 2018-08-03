@@ -155,6 +155,25 @@ osError python_value_type_float(lasso_request_t token, PyObject * obj, bool * ma
   return lasso_returnTagValueDecimal(token, value);
 }
 
+osError python_value_type_complex(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "complex";
+  if (!*matched) return osErrNoErr;
+
+  lasso_type_t real = NULL;
+  auto err = lasso_typeAllocDecimal(token, &real, PyComplex_RealAsDouble(obj));
+  if (err != osErrNoErr) return err;
+
+  lasso_type_t imag = NULL;
+  err = lasso_typeAllocDecimal(token, &imag, PyComplex_ImagAsDouble(obj));
+  if (err != osErrNoErr) return err;
+
+  lasso_type_t complex = NULL;
+  err = lasso_typeAllocPair(token, &complex, real, imag);
+  if (err != osErrNoErr) return err;
+  return lasso_returnTagValue(token, complex);
+}
+
 osError python_value_type_string(lasso_request_t token, PyObject * obj, bool * matched)
 {
   *matched = string (obj->ob_type->tp_name) == "str";
@@ -256,6 +275,7 @@ osError python_value( lasso_request_t token, tag_action_t action )
 
   pythonValueType protos[] = {
     &python_value_type_int,
+    &python_value_type_complex,
     &python_value_type_float,
     &python_value_type_string,
     &python_value_type_list,

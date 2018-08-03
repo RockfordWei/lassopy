@@ -16,6 +16,7 @@ def mydouble(num):
     return num * 2
     
 intVar = 1048576
+complexVar = 2+3j
 stringVar = 'Hello, world'
 listVar = ['rocky', 505, 2.23, 'wei', 70.2]
 tupleVar = ('juice', 'beer', 999, 'coke', 39.11, 'water', 'soda')
