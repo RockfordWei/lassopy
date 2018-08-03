@@ -1,7 +1,8 @@
 #include "lassopy.h"
-#include <Python.h>
 #include <iostream>
 #include <list>
+#include <string>
+#include <Python.h>
 
 using namespace std;
 
@@ -306,7 +307,7 @@ osError python_value( lasso_request_t token, tag_action_t action )
     }
   }
 
-  cerr << "python type " << obj->ob_type->tp_name << " <::> " << getErrMsg(osErrNotImplemented) << endl;
+  cerr << "python type " << obj->ob_type->tp_name << " is not representable. "<< endl;
   
   return osErrNotImplemented;
 }
