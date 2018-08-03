@@ -13,11 +13,16 @@ if (true) => {^
 #py = python('foo')
 local(x = #py->load('intVar'))
 local(y = #py->load('stringVar'))
+local(z = #py->load('bytesVar'))
 if (true) => {^
     '\nexpecting integer: '
     #x->value()
     '\nexpecting string: '
     #y->value()
+    '\nexpecting bytes: '
+    local(buf = #z->value())
+    local(bufstr = #buf->asString('UTF-8'))
+    #bufstr
 ^}
 
 

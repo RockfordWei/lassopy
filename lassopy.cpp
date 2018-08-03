@@ -187,6 +187,19 @@ osError python_value_type_string(lasso_request_t token, PyObject * obj, bool * m
   }
 }
 
+osError python_value_type_bytes(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "bytes";
+  if (!*matched) return osErrNoErr;
+  auto size = PyBytes_Size(obj);
+  char * buffer = PyBytes_AsString(obj);
+  if (buffer && size > 0) {
+    return lasso_returnTagValueBytes(token, buffer, size);    
+  } else {
+    return lasso_returnTagValueBytes(token, NULL, 0);
+  }
+}
+
 osError python_value_type_list(lasso_request_t token, PyObject * obj, bool * matched)
 {
   *matched = string (obj->ob_type->tp_name) == "list";
@@ -278,6 +291,7 @@ osError python_value( lasso_request_t token, tag_action_t action )
     &python_value_type_complex,
     &python_value_type_float,
     &python_value_type_string,
+    &python_value_type_bytes,
     &python_value_type_list,
     &python_value_type_tuple,
     &python_value_type_dict
@@ -292,7 +306,7 @@ osError python_value( lasso_request_t token, tag_action_t action )
     }
   }
 
-  cerr << "python type " << obj->ob_type->tp_name << " has not implemented yet" << endl;
+  cerr << "python type " << obj->ob_type->tp_name << " <::> " << getErrMsg(osErrNotImplemented) << endl;
   
   return osErrNotImplemented;
 }

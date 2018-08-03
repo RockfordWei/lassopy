@@ -18,6 +18,7 @@ def mydouble(num):
 intVar = 1048576
 complexVar = 2+3j
 stringVar = 'Hello, world'
+bytesVar = bytes(stringVar, 'utf-8')
 listVar = ['rocky', 505, 2.23, 'wei', 70.2]
 tupleVar = ('juice', 'beer', 999, 'coke', 39.11, 'water', 'soda')
 dictVar = {'Name': 'Rocky', 'Age': 17, 'Class': 'Top'}
