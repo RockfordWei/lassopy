@@ -189,6 +189,27 @@ osError python_value_type_list(lasso_request_t token, PyObject * obj, bool * mat
   return lasso_returnTagValue(token, array);
 }
 
+osError python_value_type_tuple(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "tuple";
+  if (!*matched) return osErrNoErr;
+  auto size = PyTuple_Size(obj);
+  lasso_type_t *elements = new lasso_type_t[size];
+  auto i = size;
+  for (i = 0; i < size; i++) {
+    
+    auto x = PyTuple_GetItem(obj, i);
+    auto err = lasso_typeAlloc(token, kPython, 0, NULL, elements + i);
+    if (err != osErrNoErr) return err;
+    err = lasso_setPtrMember(token, elements[i], kPyObjReference, x, NULL);
+    if (err != osErrNoErr) return err;
+  }
+  lasso_type_t array = NULL;
+  auto err = lasso_typeAllocArray(token, &array, size, elements);
+  if (err != osErrNoErr) return err;
+  return lasso_returnTagValue(token, array);
+}
+
 osError python_value_type_dict(lasso_request_t token, PyObject * obj, bool * matched)
 {
   *matched = string (obj->ob_type->tp_name) == "dict";
@@ -223,35 +244,37 @@ osError python_value_type_dict(lasso_request_t token, PyObject * obj, bool * mat
 
 osError python_value( lasso_request_t token, tag_action_t action )
 {
-    lasso_type_t self = NULL;
-    auto err = lasso_getTagSelf(token, &self);
+  lasso_type_t self = NULL;
+  auto err = lasso_getTagSelf(token, &self);
 
-    void * pobj = NULL;
-    err = lasso_getPtrMember(token, self, kPyObjReference, &pobj);
-	  if (err != osErrNoErr) return err;
+  void * pobj = NULL;
+  err = lasso_getPtrMember(token, self, kPyObjReference, &pobj);
+  if (err != osErrNoErr) return err;
 
-    auto obj = reinterpret_cast<PyObject *>(pobj);
-    if (!obj) return osErrResNotFound;
+  auto obj = reinterpret_cast<PyObject *>(pobj);
+  if (!obj) return osErrResNotFound;
 
-    string tp_name = string (obj->ob_type->tp_name);
-    pythonValueType protos[] = {
-      &python_value_type_int,
-      &python_value_type_float,
-      &python_value_type_string,
-      &python_value_type_list,
-      &python_value_type_dict
-    };
+  pythonValueType protos[] = {
+    &python_value_type_int,
+    &python_value_type_float,
+    &python_value_type_string,
+    &python_value_type_list,
+    &python_value_type_tuple,
+    &python_value_type_dict
+  };
 
-    list<pythonValueType> prototypes(protos, protos + sizeof(protos) / sizeof(pythonValueType));
-    for(auto i = prototypes.begin(); i != prototypes.end(); i++) {
-      bool matched = false;
-      err = (*i)(token, obj, &matched);
-      if (matched) {
-        return err;
-      }
+  list<pythonValueType> prototypes(protos, protos + sizeof(protos) / sizeof(pythonValueType));
+  for(auto i = prototypes.begin(); i != prototypes.end(); i++) {
+    bool matched = false;
+    err = (*i)(token, obj, &matched);
+    if (matched) {
+      return err;
     }
-    
-    return osErrNotImplemented;
+  }
+
+  cerr << "python type " << obj->ob_type->tp_name << " has not implemented yet" << endl;
+  
+  return osErrNotImplemented;
 }
 
 

@@ -40,9 +40,16 @@ if (true) => {^
       select #element->value()
 ^}
 
+local(tup = #py->load('tupleVar'))
+if (true) => {^
+    '\nexpecting tuple: '
+    with element in #tup->value()
+      select #element->value()
+^}
+
 local(dic = #py->load('dictVar'))
 if (true) => {^
-    '\nexpecting dic: \n'
+    '\nexpecting dictionary: \n'
     with element in #dic->value()
     do {^
       local(key = #element->first())
