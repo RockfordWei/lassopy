@@ -125,7 +125,7 @@ osError python_load( lasso_request_t token, tag_action_t action )
   if (err != osErrNoErr) return err;
 
   auto * pmod = reinterpret_cast<PyObject *>(mod);
-  if (!pmod) return osErrResource;
+  if (!pmod) return osErrNilPointer;
 
   auto * obj = PyObject_GetAttrString(pmod, pyobj.name);
   if (!obj) return osErrResNotFound;
@@ -184,6 +184,11 @@ osError python_value_type_string(lasso_request_t token, PyObject * obj, bool * m
   if (str && sz > 0) {
       return lasso_returnTagValueString(token, str, sz);
   } else {
+    lasso_type_t null = NULL;
+    auto err = lasso_typeAllocNull(token, &null);
+    if (err == osErrNoErr)
+      return lasso_returnTagValue(token, null);
+    else 
       return lasso_returnTagValueString(token, "", 0);
   }
 }
@@ -197,7 +202,12 @@ osError python_value_type_bytes(lasso_request_t token, PyObject * obj, bool * ma
   if (buffer && size > 0) {
     return lasso_returnTagValueBytes(token, buffer, size);    
   } else {
-    return lasso_returnTagValueBytes(token, NULL, 0);
+    lasso_type_t null = NULL;
+    auto err = lasso_typeAllocNull(token, &null);
+    if (err == osErrNoErr)
+      return lasso_returnTagValue(token, null);
+    else 
+      return lasso_returnTagValueBytes(token, NULL, 0);
   }
 }
 
@@ -285,7 +295,7 @@ osError python_value( lasso_request_t token, tag_action_t action )
   if (err != osErrNoErr) return err;
 
   auto obj = reinterpret_cast<PyObject *>(pobj);
-  if (!obj) return osErrResNotFound;
+  if (!obj) return osErrNilPointer;
 
   pythonValueType protos[] = {
     &python_value_type_int,
@@ -332,8 +342,9 @@ osError python_run( lasso_request_t token, tag_action_t action )
   err = lasso_typeGetString(token, command_type, &command_value);
   if (err != osErrNoErr) return err;
 
-  PyRun_SimpleString(command_value.name);
-  return err;
+  auto res = PyRun_SimpleString(command_value.name);
+  if (res == 0) return err;
+  return osErrAssert;
 }
 
 string getErrMsg(osError err) 
