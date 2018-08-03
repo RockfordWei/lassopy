@@ -33,6 +33,13 @@ if (true) => {^
     #m->value()
 ^}
 
+local(arr = #py->load('listVar'))
+if (true) => {^
+    '\nexpecting array: '
+    with element in #arr->value()
+      select #element->value()
+^}
+
 #py->run("from datetime import datetime; print('\\n\\n\\nthis is not what you want', datetime.now(), '\\n\\n\\n')");
 if (true) => {^
     '\n\nThe end.'

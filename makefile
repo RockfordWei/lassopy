@@ -26,7 +26,7 @@ Linux_LN = g++
 
 DEBUG = -O3 -DNDEBUG
 INCLUDES += -I. 
-CXXFLAGS += -fPIC $(DEBUG) $(CFAT) $($(OS)_CFLAGS) -Wno-deprecated -fshort-wchar
+CXXFLAGS += -fPIC $(DEBUG) $(CFAT) $($(OS)_CFLAGS) -Wno-deprecated -fshort-wchar -std=c++1y
 LIBS += $($(OS)_LIBS) #-licui18n -licuuc -licudata
 LFLAGS += $(LFAT) $($(OS)_LFLAGS) $(LIBS)
 

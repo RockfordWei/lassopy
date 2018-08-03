@@ -1,7 +1,7 @@
 #include "lassopy.h"
 #include <Python.h>
 #include <iostream>
-#include <stack>
+#include <list>
 
 using namespace std;
 
@@ -28,7 +28,7 @@ string getErrMsg(osError err);
 
 void registerLassoModule( void )
 {
-    Py_Initialize();
+  Py_Initialize();
 	lasso_registerTypeModule("", kPython, python_typeinit, 
         REG_FLAGS_TYPE_DEFAULT|flag_prototype, 
         "Initializer for the python type.", NULL);
@@ -36,37 +36,37 @@ void registerLassoModule( void )
 
 osError python_typeinit(lasso_request_t token, tag_action_t action)
 {
-    lasso_type_t self = NULL;
+  lasso_type_t self = NULL;
 	osError err = lasso_typeAllocCustom(token, &self, kPython);
-    if ( err != osErrNoErr ) return err;
-    // add private data member
+  if ( err != osErrNoErr ) return err;
+  // add private data member
 	lasso_type_t i;
 	lasso_typeAllocInteger(token, &i, 0);
 	lasso_typeAddDataMember(token, self, kPyObjReference, i);
 
-    lasso_type_t tag = NULL;
-    lasso_typeAllocTag(token, &tag, python_onCreate);
-    lasso_typeAddMember(token, self, kPyCreate, tag);
+  lasso_type_t tag = NULL;
+  lasso_typeAllocTag(token, &tag, python_onCreate);
+  lasso_typeAddMember(token, self, kPyCreate, tag);
 
-    lasso_typeAllocTag(token, &tag, python_import);
-    lasso_typeAddMember(token, self, kPyImport, tag);
+  lasso_typeAllocTag(token, &tag, python_import);
+  lasso_typeAddMember(token, self, kPyImport, tag);
 
-    lasso_typeAllocTag(token, &tag, python_load);
-    lasso_typeAddMember(token, self, kPyLoad, tag);
+  lasso_typeAllocTag(token, &tag, python_load);
+  lasso_typeAddMember(token, self, kPyLoad, tag);
 
-    lasso_typeAllocTag(token, &tag, python_save);
-    lasso_typeAddMember(token, self, kPySave, tag);
+  lasso_typeAllocTag(token, &tag, python_save);
+  lasso_typeAddMember(token, self, kPySave, tag);
 
-    lasso_typeAllocTag(token, &tag, python_value);
-    lasso_typeAddMember(token, self, kPyValue, tag);
+  lasso_typeAllocTag(token, &tag, python_value);
+  lasso_typeAddMember(token, self, kPyValue, tag);
 
-    lasso_typeAllocTag(token, &tag, python_call);
-    lasso_typeAddMember(token, self, kPyCall, tag);
+  lasso_typeAllocTag(token, &tag, python_call);
+  lasso_typeAddMember(token, self, kPyCall, tag);
 
-    lasso_typeAllocTag(token, &tag, python_run);
-    lasso_typeAddMember(token, self, kPyRun, tag);
+  lasso_typeAllocTag(token, &tag, python_run);
+  lasso_typeAddMember(token, self, kPyRun, tag);
 
-    return lasso_returnTagValue(token, self);
+  return lasso_returnTagValue(token, self);
 }
 
 osError python_onCreate(lasso_request_t token, tag_action_t action)
@@ -80,93 +80,145 @@ osError python_onCreate(lasso_request_t token, tag_action_t action)
 
 void python_release(void * ptr) 
 {
-    PyObject * obj = reinterpret_cast<PyObject *>(ptr);
-    if (obj) Py_DecRef(obj);
+  auto * obj = reinterpret_cast<PyObject *>(ptr);
+  if (obj) Py_DecRef(obj);
 }
 
 osError python_import( lasso_request_t token, tag_action_t action )
 {
-    lasso_type_t self = NULL;
-    osError err = lasso_getTagSelf(token, &self);
-    if(err != osErrNoErr) return err;
-	if(!self) return osErrInvalidParameter;
-    lasso_type_t param_lib_path = NULL;
-    err = lasso_getTagParam2(token, 0, &param_lib_path);
-	if (err != osErrNoErr) return err;
+  lasso_type_t self = NULL;
+  auto err = lasso_getTagSelf(token, &self);
+  if(err != osErrNoErr) return err;
+  if(!self) return osErrInvalidParameter;
+  lasso_type_t param_lib_path = NULL;
+  err = lasso_getTagParam2(token, 0, &param_lib_path);
+  if (err != osErrNoErr) return err;
 
-    auto_lasso_value_t lib_path;
-    err = lasso_typeGetString(token, param_lib_path, &lib_path);
-	if (err != osErrNoErr) return err;
+  auto_lasso_value_t lib_path;
+  err = lasso_typeGetString(token, param_lib_path, &lib_path);
+  if (err != osErrNoErr) return err;
 
-    PyObject * mod = PyImport_ImportModule(lib_path.name);
-    if (!mod) return osErrFileInvalid;
-    return lasso_setPtrMember(token, self, kPyObjReference, mod, &python_release);
+  auto * mod = PyImport_ImportModule(lib_path.name);
+  if (!mod) return osErrFileInvalid;
+  return lasso_setPtrMember(token, self, kPyObjReference, mod, &python_release);
 }
 
 osError python_load( lasso_request_t token, tag_action_t action )
 { 
-    lasso_type_t self = NULL;
-    osError err = lasso_getTagSelf(token, &self);
-    if(err != osErrNoErr) return err;
-	if(!self) return osErrInvalidParameter;
-    lasso_type_t object = NULL;
-    err = lasso_getTagParam2(token, 0, &object);
-	if (err != osErrNoErr) return err;
+  lasso_type_t self = NULL;
+  auto err = lasso_getTagSelf(token, &self);
+  if(err != osErrNoErr) return err;
+  if(!self) return osErrInvalidParameter;
+  lasso_type_t object = NULL;
+  err = lasso_getTagParam2(token, 0, &object);
+  if (err != osErrNoErr) return err;
 
-    auto_lasso_value_t pyobj;
-    err = lasso_typeGetString(token, object, &pyobj);
-	if (err != osErrNoErr) return err;
+  auto_lasso_value_t pyobj;
+  err = lasso_typeGetString(token, object, &pyobj);
+  if (err != osErrNoErr) return err;
 
-    if (!pyobj.name) return osErrInvalidParameter;
+  if (!pyobj.name) return osErrInvalidParameter;
 
-    void * mod = NULL;
-    err = lasso_getPtrMember(token, self, kPyObjReference, &mod);
-	if (err != osErrNoErr) return err;
+  void * mod = NULL;
+  err = lasso_getPtrMember(token, self, kPyObjReference, &mod);
+  if (err != osErrNoErr) return err;
 
-    PyObject * pmod = reinterpret_cast<PyObject *>(mod);
-    if (!pmod) return osErrResource;
+  auto * pmod = reinterpret_cast<PyObject *>(mod);
+  if (!pmod) return osErrResource;
 
-    PyObject * obj = PyObject_GetAttrString(pmod, pyobj.name);
-    if (!obj) return osErrResNotFound;
+  auto * obj = PyObject_GetAttrString(pmod, pyobj.name);
+  if (!obj) return osErrResNotFound;
 
-    lasso_type_t child;
-    err = lasso_typeAlloc(token, kPython, 0, NULL, &child);
+  lasso_type_t child;
+  err = lasso_typeAlloc(token, kPython, 0, NULL, &child);
+  if (err != osErrNoErr) return err;
+  err = lasso_setPtrMember(token, child, kPyObjReference, obj, &python_release);
+  if (err != osErrNoErr) return err;
+  return lasso_returnTagValue(token, child);
+}
+
+typedef osError (*pythonValueType) (lasso_request_t token, PyObject * obj, bool * matched);
+
+osError python_value_type_int(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "int";
+  if (!*matched) return osErrNoErr;
+  auto value = PyLong_AsLongLong(obj);
+  return lasso_returnTagValueInteger(token, value);
+}
+
+osError python_value_type_float(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "float";
+  if (!*matched) return osErrNoErr;
+  auto value = PyFloat_AsDouble(obj);
+  return lasso_returnTagValueDecimal(token, value);
+}
+
+osError python_value_type_string(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "str";
+  if (!*matched) return osErrNoErr;
+  Py_ssize_t sz = 0;
+  auto str = PyUnicode_AsUTF8AndSize(obj, &sz);
+  if (str && sz > 0) {
+      return lasso_returnTagValueString(token, str, sz);
+  } else {
+      return lasso_returnTagValueString(token, "", 0);
+  }
+}
+
+osError python_value_type_list(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "list";
+  if (!*matched) return osErrNoErr;
+  auto size = PyList_Size(obj);
+  lasso_type_t *elements = new lasso_type_t[size];
+  auto i = size;
+  for (i = 0; i < size; i++) {
+    
+    auto x = PyList_GetItem(obj, i);
+    auto err = lasso_typeAlloc(token, kPython, 0, NULL, elements + i);
     if (err != osErrNoErr) return err;
-    err = lasso_setPtrMember(token, child, kPyObjReference, obj, &python_release);
+    err = lasso_setPtrMember(token, elements[i], kPyObjReference, x, &python_release);
     if (err != osErrNoErr) return err;
-    return lasso_returnTagValue(token, child);
+  }
+  lasso_type_t array = NULL;
+  auto err = lasso_typeAllocArray(token, &array, size, elements);
+  if (err != osErrNoErr) return err;
+  return lasso_returnTagValue(token, array);
 }
 
 osError python_value( lasso_request_t token, tag_action_t action )
 {
     lasso_type_t self = NULL;
-    osError err = lasso_getTagSelf(token, &self);
+    auto err = lasso_getTagSelf(token, &self);
 
     void * pobj = NULL;
     err = lasso_getPtrMember(token, self, kPyObjReference, &pobj);
-	if (err != osErrNoErr) return err;
+	  if (err != osErrNoErr) return err;
 
-    PyObject * obj = reinterpret_cast<PyObject *>(pobj);
+    auto obj = reinterpret_cast<PyObject *>(pobj);
     if (!obj) return osErrResNotFound;
 
     string tp_name = string (obj->ob_type->tp_name);
-    if (tp_name == "int") {
-        long long value = PyLong_AsLongLong(obj);
-        return lasso_returnTagValueInteger(token, value);
-    } else if (tp_name == "float") {
-        double value = PyFloat_AsDouble(obj);
-        return lasso_returnTagValueDecimal(token, value);
-    } else if (tp_name == "str") {
-        Py_ssize_t sz = 0;
-        char * str = PyUnicode_AsUTF8AndSize(obj, &sz);
-        if (str && sz > 0) {
-            return lasso_returnTagValueString(token, str, sz);
-        } else {
-            return lasso_returnTagValueString(token, "", 0);
-        }
-    } else {
-        return osErrNotImplemented;
+    pythonValueType protos[] = {
+      &python_value_type_int,
+      &python_value_type_float,
+      &python_value_type_string,
+      &python_value_type_list
+    };
+
+    list<pythonValueType> prototypes(protos, protos + sizeof(protos) / sizeof(pythonValueType));
+    for(auto i = prototypes.begin(); i != prototypes.end(); i++) {
+      bool matched = false;
+      err = (*i)(token, obj, &matched);
+      if (matched) {
+        return err;
+      }
     }
+    
+    return osErrNotImplemented;
 }
 
 
@@ -177,20 +229,20 @@ osError python_call( lasso_request_t token, tag_action_t action )
 
 osError python_run( lasso_request_t token, tag_action_t action )
 { 
-    lasso_type_t self = NULL;
-    osError err = lasso_getTagSelf(token, &self);
-    if(err != osErrNoErr) return err;
-	if(!self) return osErrInvalidParameter;
-    lasso_type_t command_type = NULL;
-    err = lasso_getTagParam2(token, 0, &command_type);
-	if (err != osErrNoErr) return err;
+  lasso_type_t self = NULL;
+  auto err = lasso_getTagSelf(token, &self);
+  if(err != osErrNoErr) return err;
+  if(!self) return osErrInvalidParameter;
+  lasso_type_t command_type = NULL;
+  err = lasso_getTagParam2(token, 0, &command_type);
+  if (err != osErrNoErr) return err;
 
-    auto_lasso_value_t command_value;
-    err = lasso_typeGetString(token, command_type, &command_value);
-	if (err != osErrNoErr) return err;
+  auto_lasso_value_t command_value;
+  err = lasso_typeGetString(token, command_type, &command_value);
+  if (err != osErrNoErr) return err;
 
-    PyRun_SimpleString(command_value.name);
-    return err;
+  PyRun_SimpleString(command_value.name);
+  return err;
 }
 
 string getErrMsg(osError err) 
