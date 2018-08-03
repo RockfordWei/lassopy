@@ -40,6 +40,21 @@ if (true) => {^
       select #element->value()
 ^}
 
+local(dic = #py->load('dictVar'))
+if (true) => {^
+    '\nexpecting dic: \n'
+    with element in #dic->value()
+    do {^
+      local(key = #element->first())
+      local(val = #element->second())
+      "\t"
+      #key
+      ":\t"
+      #val->value()
+      "\n"
+    ^}
+^}
+
 #py->run("from datetime import datetime; print('\\n\\n\\nthis is not what you want', datetime.now(), '\\n\\n\\n')");
 if (true) => {^
     '\n\nThe end.'

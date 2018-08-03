@@ -180,9 +180,41 @@ osError python_value_type_list(lasso_request_t token, PyObject * obj, bool * mat
     auto x = PyList_GetItem(obj, i);
     auto err = lasso_typeAlloc(token, kPython, 0, NULL, elements + i);
     if (err != osErrNoErr) return err;
-    err = lasso_setPtrMember(token, elements[i], kPyObjReference, x, &python_release);
+    err = lasso_setPtrMember(token, elements[i], kPyObjReference, x, NULL);
     if (err != osErrNoErr) return err;
   }
+  lasso_type_t array = NULL;
+  auto err = lasso_typeAllocArray(token, &array, size, elements);
+  if (err != osErrNoErr) return err;
+  return lasso_returnTagValue(token, array);
+}
+
+osError python_value_type_dict(lasso_request_t token, PyObject * obj, bool * matched)
+{
+  *matched = string (obj->ob_type->tp_name) == "dict";
+  if (!*matched) return osErrNoErr;
+  
+  auto keys = PyDict_Keys(obj);
+  auto size = PyDict_Size(obj);
+  auto i = size;
+  lasso_type_t *elements = new lasso_type_t[size];
+  for (i = 0; i < size; i++) {
+    auto key = PyList_GetItem(keys, i);
+    auto val = PyDict_GetItem(obj, key);
+    Py_ssize_t sz = 0;
+    auto name = PyUnicode_AsUTF8AndSize(key, &sz);
+    lasso_type_t first = NULL;
+    lasso_type_t second = NULL;
+    auto err = lasso_typeAllocString(token, &first, name, sz);
+    if (err != osErrNoErr) return err;
+    err = lasso_typeAlloc(token, kPython, 0, NULL, &second);
+    if (err != osErrNoErr) return err;
+    err = lasso_setPtrMember(token, second, kPyObjReference, val, NULL);
+    if (err != osErrNoErr) return err;
+    err = lasso_typeAllocPair(token, elements + i, first, second);
+    if (err != osErrNoErr) return err;
+  }
+  
   lasso_type_t array = NULL;
   auto err = lasso_typeAllocArray(token, &array, size, elements);
   if (err != osErrNoErr) return err;
@@ -206,7 +238,8 @@ osError python_value( lasso_request_t token, tag_action_t action )
       &python_value_type_int,
       &python_value_type_float,
       &python_value_type_string,
-      &python_value_type_list
+      &python_value_type_list,
+      &python_value_type_dict
     };
 
     list<pythonValueType> prototypes(protos, protos + sizeof(protos) / sizeof(pythonValueType));
