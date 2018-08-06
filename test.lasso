@@ -17,12 +17,17 @@ local(z = #py->load('bytesVar'))
 if (true) => {^
     '\nexpecting integer: '
     #x->value()
+    '\nexpecting new value:'
+    #x->save(1024)
+    #x->value()
+    '\n'
     '\nexpecting string: '
     #y->value()
     '\nexpecting bytes: '
     local(buf = #z->value())
     local(bufstr = #buf->asString('UTF-8'))
     #bufstr
+    
 ^}
 
 

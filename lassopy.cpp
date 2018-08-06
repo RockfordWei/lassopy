@@ -23,6 +23,16 @@ static const char * kPySave = "save";
 static const char * kPyValue = "value";
 static const char * kPyCall = "call";
 static const char * kPyRun = "run";
+
+static string kPyTypeInt = "int";
+static string kPyTypeFloat = "float";
+static string kPyTypeComplex = "complex";
+static string kPyTypeStr = "str";
+static string kPyTypeBytes = "bytes";
+static string kPyTypeList = "list";
+static string kPyTypeTuple = "tuple";
+static string kPyTypeDict = "dict";
+
 // Private data member
 static const char * kPyObjReference  = "_pyobject";
 string getErrMsg(osError err);
@@ -31,10 +41,13 @@ class PyObj {
 protected:
   PyObject * reference = NULL;
   bool should_release = false;
+  string my_type;
+  
 public:
   PyObj(PyObject * ref, bool auto_release = true);
   ~PyObj();
   PyObject * access();
+  string type();
   void update(PyObject * newReference, bool auto_release = true);
 };
 
@@ -42,6 +55,7 @@ PyObj::PyObj(PyObject * ref, bool auto_release)
 {
   this->reference = ref;
   this->should_release = auto_release;
+  this->my_type = string(ref->ob_type->tp_name);
 }
 
 PyObj::~PyObj()
@@ -49,6 +63,11 @@ PyObj::~PyObj()
   if (this->should_release && this->reference) {
     Py_DecRef(this->reference);
   }
+}
+
+string PyObj::type()
+{
+  return this->my_type;
 }
 
 void PyObj::update(PyObject * newReference, bool auto_release)
@@ -181,27 +200,30 @@ osError python_load( lasso_request_t token, tag_action_t action )
   return lasso_returnTagValue(token, child);
 }
 
-typedef osError (*pythonValueType) (lasso_request_t token, PyObject * obj, bool * matched);
+typedef osError (*python_value_type_t) (lasso_request_t token, PyObj * pobj, bool * matched);
 
-osError python_value_type_int(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_int(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "int";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeInt;
   if (!*matched) return osErrNoErr;
   auto value = PyLong_AsLongLong(obj);
   return lasso_returnTagValueInteger(token, value);
 }
 
-osError python_value_type_float(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_float(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "float";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeFloat;
   if (!*matched) return osErrNoErr;
   auto value = PyFloat_AsDouble(obj);
   return lasso_returnTagValueDecimal(token, value);
 }
 
-osError python_value_type_complex(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_complex(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "complex";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeComplex;
   if (!*matched) return osErrNoErr;
 
   lasso_type_t real = NULL;
@@ -218,9 +240,10 @@ osError python_value_type_complex(lasso_request_t token, PyObject * obj, bool * 
   return lasso_returnTagValue(token, complex);
 }
 
-osError python_value_type_string(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_string(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "str";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeStr;
   if (!*matched) return osErrNoErr;
   Py_ssize_t sz = 0;
   auto str = PyUnicode_AsUTF8AndSize(obj, &sz);
@@ -236,9 +259,10 @@ osError python_value_type_string(lasso_request_t token, PyObject * obj, bool * m
   }
 }
 
-osError python_value_type_bytes(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_bytes(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "bytes";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeBytes;
   if (!*matched) return osErrNoErr;
   auto size = PyBytes_Size(obj);
   char * buffer = PyBytes_AsString(obj);
@@ -254,9 +278,10 @@ osError python_value_type_bytes(lasso_request_t token, PyObject * obj, bool * ma
   }
 }
 
-osError python_value_type_list(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_list(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "list";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeList;
   if (!*matched) return osErrNoErr;
   auto size = PyList_Size(obj);
   lasso_type_t *elements = new lasso_type_t[size];
@@ -277,9 +302,10 @@ osError python_value_type_list(lasso_request_t token, PyObject * obj, bool * mat
   return lasso_returnTagValue(token, array);
 }
 
-osError python_value_type_tuple(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_tuple(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "tuple";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeTuple;
   if (!*matched) return osErrNoErr;
   auto size = PyTuple_Size(obj);
   lasso_type_t *elements = new lasso_type_t[size];
@@ -300,9 +326,10 @@ osError python_value_type_tuple(lasso_request_t token, PyObject * obj, bool * ma
   return lasso_returnTagValue(token, array);
 }
 
-osError python_value_type_dict(lasso_request_t token, PyObject * obj, bool * matched)
+osError python_value_type_dict(lasso_request_t token, PyObj * pobj, bool * matched)
 {
-  *matched = string (obj->ob_type->tp_name) == "dict";
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeDict;
   if (!*matched) return osErrNoErr;
   
   auto keys = PyDict_Keys(obj);
@@ -343,13 +370,10 @@ osError python_value( lasso_request_t token, tag_action_t action )
   err = lasso_getPtrMember(token, self, kPyObjReference, &pobj);
   if (err != osErrNoErr) return err;
   
-  PyObj * pointer = reinterpret_cast<PyObj *>(pobj);
-  if (!pointer) return osErrNilPointer;
-
-  auto obj = pointer->access();
+  PyObj * obj = reinterpret_cast<PyObj *>(pobj);
   if (!obj) return osErrNilPointer;
 
-  pythonValueType protos[] = {
+  python_value_type_t protos[] = {
     &python_value_type_int,
     &python_value_type_complex,
     &python_value_type_float,
@@ -360,35 +384,35 @@ osError python_value( lasso_request_t token, tag_action_t action )
     &python_value_type_dict
   };
 
-  list<pythonValueType> prototypes(protos, protos + sizeof(protos) / sizeof(pythonValueType));
+  list<python_value_type_t> prototypes(protos, protos + sizeof(protos) / sizeof(python_value_type_t));
   for(auto i = prototypes.begin(); i != prototypes.end(); i++) {
     bool matched = false;
     err = (*i)(token, obj, &matched);
-    if (matched) {
-      return err;
-    }
+    if (matched) return err;
   }
 
-  cerr << "python type " << obj->ob_type->tp_name << " is not representable. "<< endl;
+  cerr << "python type " << obj->type() << " is not representable. "<< endl;
   
   return osErrNotImplemented;
 }
 
-osError python_save_type_int(lasso_request_t token, PyObject * obj, lasso_type_t newValue, PyObject **newObj)
+typedef osError (*python_value_save_t)(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched);
+
+osError python_save_type_int(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched)
 {
-  if (string (obj->ob_type->tp_name) != "int") return osErrNoErr;
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeInt;
+  if (! *matched) return osErrNoErr;
   int64_t newVal = 0;
   auto err = lasso_typeGetInteger(token, newValue, &newVal);
   if (err != osErrNoErr) return err;
-  *newObj = PyLong_FromLongLong(newVal);
+  auto newObj = PyLong_FromLongLong(newVal);
+  pobj->update(newObj);
   return err;
 }
 
-typedef osError (pythonValueSave)(lasso_request_t token, PyObject * obj, lasso_type_t newValue, PyObject **newObj);
-
 osError python_save( lasso_request_t token, tag_action_t action )
 { 
-  /*
   lasso_type_t self = NULL;
   auto err = lasso_getTagSelf(token, &self);
   if(err != osErrNoErr) return err;
@@ -401,24 +425,23 @@ osError python_save( lasso_request_t token, tag_action_t action )
   err = lasso_getPtrMember(token, self, kPyObjReference, &pobj);
   if (err != osErrNoErr) return err;
 
-  auto obj = reinterpret_cast<PyObject *>(pobj);
+  auto obj = reinterpret_cast<PyObj *>(pobj);
   if (!obj) return osErrNilPointer;
 
-  pythonValueSave protos[] = {
+  python_value_save_t protos[] = {
     &python_save_type_int
   };
 
-  list<pythonValueSave> prototypes(protos, protos + sizeof(protos) / sizeof(pythonValueSave));
+  list<python_value_save_t> prototypes(protos, protos + sizeof(protos) / sizeof(python_value_save_t));
   for(auto i = prototypes.begin(); i != prototypes.end(); i++) {
-    PyObject * newObj;
-    err = (*i)(token, obj, newValue, &newObj);
-    if (!newObj) continue;
-    Py_DecRef
-    
+    bool matched = false;
+    err = (*i)(token, obj, newValue, &matched);
+    if (matched) return err;
   } 
-  */
-  return osErrNoErr; 
+  cerr << "python type " << obj->type() << " is not writable. "<< endl;
+  return osErrNotImplemented; 
 }
+
 osError python_call( lasso_request_t token, tag_action_t action )
 { return osErrNoErr; }
 
