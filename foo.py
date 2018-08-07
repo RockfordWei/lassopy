@@ -16,6 +16,7 @@ def mydouble(num):
     return num * 2
     
 intVar = 1048576
+floatVar = 355.0/113.0
 complexVar = 2+3j
 stringVar = 'Hello, world'
 bytesVar = bytes('中国🇨🇳加拿大🇨🇦', 'utf-8')

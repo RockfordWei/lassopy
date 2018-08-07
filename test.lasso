@@ -12,6 +12,7 @@ if (true) => {^
 ^}
 #py = python('foo')
 local(x = #py->load('intVar'))
+local(f = #py->load('floatVar'))
 local(y = #py->load('stringVar'))
 local(z = #py->load('bytesVar'))
 if (true) => {^
@@ -20,6 +21,12 @@ if (true) => {^
     '\nexpecting new value:'
     #x->save(1024)
     #x->value()
+    '\n'
+    '\nexpecting float: '
+    #f->value()
+    '\nexpecting new value:'
+    #f->save(math_acos(0))
+    #f->value()
     '\n'
     '\nexpecting string: '
     #y->value()
@@ -46,6 +53,9 @@ if (true) => {^
 local(complex = #py->load('complexVar'))
 if (true) => {^
     '\nexpecting complex: '
+    #complex->value()
+    '\nexpecting new value:'
+    #complex->save(pair(0.8, 0.6))
     #complex->value()
 ^}
 

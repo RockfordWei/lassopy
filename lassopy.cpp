@@ -411,6 +411,43 @@ osError python_save_type_int(lasso_request_t token, PyObj * pobj, lasso_type_t n
   return err;
 }
 
+osError python_save_type_float(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched)
+{
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeFloat;
+  if (! *matched) return osErrNoErr;
+  double newVal = 0;
+  auto err = lasso_typeGetDecimal(token, newValue, &newVal);
+  if (err != osErrNoErr) return err;
+  auto newObj = PyFloat_FromDouble(newVal);
+  pobj->update(newObj);
+  return err;
+}
+
+osError python_save_type_complex(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched)
+{
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeComplex;
+  if (! *matched) return osErrNoErr;
+  lasso_type_t first = NULL, second = NULL;
+  auto err = lasso_pairGetFirst(token, newValue, &first);
+  if (err != osErrNoErr) return err;
+  err = lasso_pairGetSecond(token, newValue, &second);
+  if (err != osErrNoErr) return err;
+  
+  Py_complex value;
+  memset(&value, 0, sizeof(value));
+  
+  err = lasso_typeGetDecimal(token, first, &(value.real));
+  if (err != osErrNoErr) return err;
+  err = lasso_typeGetDecimal(token, second, &(value.imag));
+  if (err != osErrNoErr) return err;
+  
+  auto newObj = PyComplex_FromCComplex(value);
+  pobj->update(newObj);
+  return err;
+}
+
 osError python_save( lasso_request_t token, tag_action_t action )
 { 
   lasso_type_t self = NULL;
@@ -429,7 +466,9 @@ osError python_save( lasso_request_t token, tag_action_t action )
   if (!obj) return osErrNilPointer;
 
   python_value_save_t protos[] = {
-    &python_save_type_int
+    &python_save_type_int,
+    &python_save_type_float,
+    &python_save_type_complex
   };
 
   list<python_value_save_t> prototypes(protos, protos + sizeof(protos) / sizeof(python_value_save_t));
