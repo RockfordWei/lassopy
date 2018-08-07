@@ -448,6 +448,37 @@ osError python_save_type_complex(lasso_request_t token, PyObj * pobj, lasso_type
   return err;
 }
 
+osError python_save_type_string(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched)
+{
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeStr;
+  if (! *matched) return osErrNoErr;
+  auto_lasso_value_t newVal;
+  auto err = lasso_typeGetString(token, newValue, &newVal);
+  if (err != osErrNoErr) return err;
+  auto newObj = PyUnicode_FromString(newVal.name);
+  pobj->update(newObj);
+  return err;
+}
+
+osError python_save_type_bytes(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched)
+{
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeBytes;
+  if (! *matched) return osErrNoErr;
+  auto_lasso_value_t buffer;
+  auto err = lasso_getTagParam(token, 0, &buffer);
+  if (err != osErrNoErr) return err;
+  PyObject * newObj = NULL;
+  if (buffer.name && buffer.nameSize > 0) {
+    newObj = PyBytes_FromStringAndSize(buffer.name, buffer.nameSize);
+  } else {
+    newObj = PyBytes_FromStringAndSize(NULL, 0);
+  }
+  pobj->update(newObj);
+  return err;
+}
+
 osError python_save( lasso_request_t token, tag_action_t action )
 { 
   lasso_type_t self = NULL;
@@ -468,7 +499,9 @@ osError python_save( lasso_request_t token, tag_action_t action )
   python_value_save_t protos[] = {
     &python_save_type_int,
     &python_save_type_float,
-    &python_save_type_complex
+    &python_save_type_complex,
+    &python_save_type_string,
+    &python_save_type_bytes
   };
 
   list<python_value_save_t> prototypes(protos, protos + sizeof(protos) / sizeof(python_value_save_t));

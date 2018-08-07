@@ -30,11 +30,18 @@ if (true) => {^
     '\n'
     '\nexpecting string: '
     #y->value()
+    '\nexpecting new value:'
+    #y->save('Welcome to Lasso + Python playground!')
+    #y->value()
     '\nexpecting bytes: '
     local(buf = #z->value())
     local(bufstr = #buf->asString('UTF-8'))
     #bufstr
-    
+    '\nexpecting new value:'
+    #z->save('Hello, 🇨🇳 and 🇨🇦')
+    local(buf2 = #z->value())
+    local(bufstr2 = #buf2->asString('UTF-8'))
+    #bufstr2
 ^}
 
 
