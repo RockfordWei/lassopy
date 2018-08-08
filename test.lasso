@@ -11,11 +11,17 @@ if (true) => {^
     #maxyear->value()
 ^}
 #py = python('foo')
+local(b = #py->load('boolVar'))
 local(x = #py->load('intVar'))
 local(f = #py->load('floatVar'))
 local(y = #py->load('stringVar'))
 local(z = #py->load('bytesVar'))
 if (true) => {^
+    '\nexpecting boolean: '
+    #b->value()
+    '\nexpecting new value:'
+    #b->save(false)
+    #b->value()
     '\nexpecting integer: '
     #x->value()
     '\nexpecting new value:'

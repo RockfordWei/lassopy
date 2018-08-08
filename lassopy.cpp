@@ -24,6 +24,7 @@ static const char * kPyValue = "value";
 static const char * kPyCall = "call";
 static const char * kPyRun = "run";
 
+static string kPyTypeBool = "bool";
 static string kPyTypeInt = "int";
 static string kPyTypeFloat = "float";
 static string kPyTypeComplex = "complex";
@@ -202,6 +203,14 @@ osError python_load( lasso_request_t token, tag_action_t action )
 
 typedef osError (*python_value_type_t) (lasso_request_t token, PyObj * pobj, bool * matched);
 
+osError python_value_type_bool(lasso_request_t token, PyObj * pobj, bool * matched)
+{
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeBool;
+  if (!*matched) return osErrNoErr;
+  return lasso_returnTagValueBoolean(token, obj == Py_True);
+}
+
 osError python_value_type_int(lasso_request_t token, PyObj * pobj, bool * matched)
 {
   auto obj = pobj->access();
@@ -374,6 +383,7 @@ osError python_value( lasso_request_t token, tag_action_t action )
   if (!obj) return osErrNilPointer;
 
   python_value_type_t protos[] = {
+    &python_value_type_bool,
     &python_value_type_int,
     &python_value_type_complex,
     &python_value_type_float,
@@ -397,6 +407,18 @@ osError python_value( lasso_request_t token, tag_action_t action )
 }
 
 typedef osError (*python_value_save_t)(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched);
+
+osError python_save_type_bool(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched)
+{
+  auto obj = pobj->access();
+  *matched = pobj->type() == kPyTypeBool;
+  if (! *matched) return osErrNoErr;
+  bool newVal = false;
+  auto err = lasso_typeGetBoolean(token, newValue, &newVal);
+  if (err != osErrNoErr) return err;
+  pobj->update(newVal ? Py_True : Py_False);
+  return err;
+}
 
 osError python_save_type_int(lasso_request_t token, PyObj * pobj, lasso_type_t newValue, bool * matched)
 {
@@ -497,6 +519,7 @@ osError python_save( lasso_request_t token, tag_action_t action )
   if (!obj) return osErrNilPointer;
 
   python_value_save_t protos[] = {
+    &python_save_type_bool,
     &python_save_type_int,
     &python_save_type_float,
     &python_save_type_complex,

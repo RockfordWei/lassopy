@@ -15,6 +15,7 @@ def mymul(num1, num2):
 def mydouble(num):
     return num * 2
     
+boolVar = True
 intVar = 1048576
 floatVar = 355.0/113.0
 complexVar = 2+3j
